@@ -8,6 +8,7 @@ export default function ActionInput({ myPlayer, isMyTurn, onSubmit, disabled }) 
   const archetype = ARCHETYPES[myPlayer.archetype];
 
   function handleSubmit(e) {
+    alert('BUTTON TAPPED');
     e.preventDefault();
     if (!action.trim() || !isMyTurn || disabled) return;
     onSubmit(action.trim());
