@@ -16,7 +16,15 @@ export default async function handler(req, res) {
     const { prompt, type } = req.body;
     const fullPrompt = `${stylePrefix[type] || ''} ${prompt}`;
 
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=512&height=768&nologo=true&model=flux-schnell&seed=${Math.floor(Math.random() * 1000000)}`;
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=512&height=768&nologo=true&model=flux-schnell&seed=${Math.floor(Math.random() * 1000000)}`;
+
+    const imgRes = await fetch(pollinationsUrl, { signal: AbortSignal.timeout(55000) });
+    if (!imgRes.ok) throw new Error(`Pollinations error: HTTP ${imgRes.status}`);
+
+    const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+    const buffer = await imgRes.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    const url = `data:${contentType};base64,${base64}`;
 
     return res.status(200).json({ url });
   } catch (error) {
