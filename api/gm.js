@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           'HTTP-Referer': 'https://realm-xi.vercel.app',
           'X-Title': 'Realm',
         },
-        body: JSON.stringify({ model: 'meta-llama/llama-3.1-8b-instruct:free', messages, max_tokens: 2000 }),
+        body: JSON.stringify({ model: 'arcee-ai/trinity-mini:free', messages, max_tokens: 2000 }),
         signal: AbortSignal.timeout(25000),
       });
     } catch (fetchErr) {

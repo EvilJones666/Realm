@@ -17,13 +17,13 @@ export default async function handler(req, res) {
     const fullPrompt = `${stylePrefix[type] || ''} ${prompt}`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+          instances: [{ prompt: fullPrompt }],
+          parameters: { sampleCount: 1 },
         }),
       }
     );
@@ -31,10 +31,10 @@ export default async function handler(req, res) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error?.message || 'Gemini API error');
 
-    const imageData = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData;
-    if (!imageData) throw new Error('No image generated');
+    const base64 = data.predictions?.[0]?.bytesBase64Encoded;
+    if (!base64) throw new Error('No image generated');
 
-    return res.status(200).json({ base64: imageData.data, mimeType: imageData.mimeType });
+    return res.status(200).json({ base64, mimeType: 'image/png' });
   } catch (error) {
     console.error('[/api/generate-image] Error:', error?.message);
     return res.status(500).json({ error: error?.message || String(error) });
