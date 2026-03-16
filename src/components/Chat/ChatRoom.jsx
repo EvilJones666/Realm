@@ -89,6 +89,7 @@ export default function ChatRoom({ room, myPlayer, session }) {
     const msgHistory = buildMessageHistory(freshMessages, freshPlayers);
 
     let gmResponse = null;
+    let gmError = null;
     try {
       const { data, error } = await supabase.functions.invoke('gm-respond', {
         body: { roomId: room.id, systemPrompt, messageHistory: msgHistory }
@@ -97,13 +98,16 @@ export default function ChatRoom({ room, myPlayer, session }) {
       console.log('[GM] invoke error:', JSON.stringify(error));
       if (error) {
         console.error('[GM] Supabase invoke error:', error.message, error.context?.status, error.context);
+        gmError = `Supabase invoke error: ${error.message || JSON.stringify(error)} (status: ${error.context?.status ?? 'unknown'})`;
       } else if (data?.error) {
         console.error('[GM] Edge function returned error:', data.error);
+        gmError = `Edge function error: ${typeof data.error === 'string' ? data.error : JSON.stringify(data.error)}`;
       } else {
         gmResponse = data;
       }
     } catch (e) {
       console.error('[GM] Caught exception:', e);
+      gmError = `Exception: ${e?.message || String(e)}`;
     }
 
     // Generate scene image if needed
@@ -122,10 +126,13 @@ export default function ChatRoom({ room, myPlayer, session }) {
     }
 
     // Save GM narrative
+    const narrativeContent = gmResponse?.narrative
+      ? gmResponse.narrative
+      : `The realm shifts...\n[GM_ERROR: ${gmError || 'Unknown error — no narrative returned'}]`;
     await supabase.from('messages').insert({
       room_id: room.id,
       type: 'gm_narrative',
-      content: gmResponse?.narrative || 'The realm shifts...',
+      content: narrativeContent,
       image_url: imageUrl,
     });
 
