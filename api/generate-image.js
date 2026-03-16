@@ -29,11 +29,17 @@ export default async function handler(req, res) {
       }),
     });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'OpenRouter image API error');
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error(`OpenRouter returned non-JSON (HTTP ${response.status}): ${responseText.slice(0, 300)}`);
+    }
+    if (!response.ok) throw new Error(`OpenRouter error (HTTP ${response.status}): ${data.error?.message || JSON.stringify(data).slice(0, 300)}`);
 
     const url = data.data?.[0]?.url;
-    if (!url) throw new Error('No image generated');
+    if (!url) throw new Error(`No image URL in response: ${JSON.stringify(data).slice(0, 300)}`);
 
     return res.status(200).json({ url });
   } catch (error) {
