@@ -11,8 +11,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    if (req.body?.test) return res.status(200).json({ ok: true, message: 'API route reachable' });
-
     const { roomId, systemPrompt, messageHistory } = req.body;
 
     const apiKey = process.env.OPENROUTER_API_KEY;
