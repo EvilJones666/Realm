@@ -91,17 +91,23 @@ export default function ChatRoom({ room, myPlayer, session }) {
     let gmResponse = null;
     let gmError = null;
     try {
-      const { data, error } = await supabase.functions.invoke('gm-respond', {
-        body: { roomId: room.id, systemPrompt, messageHistory: msgHistory }
-      });
-      console.log('[GM] invoke data:', JSON.stringify(data));
-      console.log('[GM] invoke error:', JSON.stringify(error));
-      if (error) {
-        console.error('[GM] Supabase invoke error:', error.message, error.context?.status, error.context);
-        gmError = `Supabase invoke error: ${error.message || JSON.stringify(error)} (status: ${error.context?.status ?? 'unknown'})`;
-      } else if (data?.error) {
-        console.error('[GM] Edge function returned error:', data.error);
-        gmError = `Edge function error: ${typeof data.error === 'string' ? data.error : JSON.stringify(data.error)}`;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gm-respond`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ roomId: room.id, systemPrompt, messageHistory: msgHistory }),
+        }
+      );
+      console.log('[GM] fetch status:', res.status);
+      const data = await res.json();
+      console.log('[GM] fetch data:', JSON.stringify(data));
+      if (!res.ok || data?.error) {
+        gmError = `Edge function error (${res.status}): ${data?.error ? JSON.stringify(data.error) : res.statusText}`;
+        console.error('[GM] fetch error:', gmError);
       } else {
         gmResponse = data;
       }
