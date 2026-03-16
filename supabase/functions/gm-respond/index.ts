@@ -24,7 +24,7 @@ serve(async (req) => {
     // Build OpenAI-compatible messages array
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...messageHistory.map((msg: { role: string; content: string }) => ({
+      ...(messageHistory || []).map((msg: { role: string; content: string }) => ({
         role: msg.role,
         content: msg.content,
       })),
