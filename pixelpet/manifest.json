@@ -1,0 +1,19 @@
+{
+  "name": "PIXELPET",
+  "short_name": "PIXELPET",
+  "description": "A retro pixel art virtual pet — Game Boy style Tamagotchi PWA",
+  "start_url": "/pixelpet/",
+  "scope": "/pixelpet/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#9bbc0f",
+  "theme_color": "#0f380f",
+  "icons": [
+    {
+      "src": "/sprites/adult_a.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

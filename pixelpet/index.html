@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f380f">
+  <title>PIXELPET</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ===== GAME BOY PALETTE ===== */
+    :root {
+      --gb-1: #0f380f;
+      --gb-2: #306230;
+      --gb-3: #8bac0f;
+      --gb-4: #9bbc0f;
+    }
+
+    /* ===== PAGE ===== */
+    html, body {
+      height: 100%;
+      background: #1c1c2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+      overflow: hidden;
+    }
+
+    /* ===== DEVICE SHELL ===== */
+    .device {
+      width: 260px;
+      background: #c8b860;
+      border-radius: 14px 14px 50% 50% / 14px 14px 22px 22px;
+      padding: 18px 18px 30px;
+      box-shadow:
+        0 4px 0 #8a7d00,
+        0 8px 0 #6a5e00,
+        0 12px 28px rgba(0,0,0,0.7);
+      position: relative;
+      user-select: none;
+    }
+
+    /* Device brand label */
+    .device-brand {
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.3em;
+      color: var(--gb-1);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    /* ===== SCREEN ===== */
+    .screen-bezel {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 14px 14px 10px;
+      margin-bottom: 14px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    .screen-label {
+      font-size: 8px;
+      letter-spacing: 0.2em;
+      color: #4a4a7e;
+      text-align: center;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .screen-window {
+      background: var(--gb-4);
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* The actual canvas: 64×64 pixels, scaled up 3× via CSS */
+    #screen {
+      display: block;
+      width: 192px;
+      height: 192px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: var(--gb-4);
+    }
+
+    /* ===== STATS PANEL ===== */
+    .stats-panel {
+      padding: 0 4px;
+      margin-bottom: 10px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+
+    .stat-icon {
+      font-size: 10px;
+      width: 14px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .bar-bg {
+      flex: 1;
+      height: 5px;
+      background: var(--gb-2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--gb-1);
+      border-radius: 3px;
+      transition: width 0.4s ease;
+      width: 100%;
+    }
+
+    .bar-fill.low  { background: #6a1a1a; }
+    .bar-fill.mid  { background: var(--gb-2); }
+    .bar-fill.high { background: var(--gb-1); }
+
+    .pet-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--gb-1);
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .message-bar {
+      font-size: 9px;
+      color: var(--gb-2);
+      text-align: center;
+      height: 13px;
+      line-height: 13px;
+      margin-top: 3px;
+      overflow: hidden;
+      white-space: nowrap;
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 50%;
+      background: var(--gb-1);
+      color: var(--gb-4);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 0 #060d06, 0 4px 8px rgba(0,0,0,0.3);
+      transition: transform 0.08s, box-shadow 0.08s;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .btn-new-game {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      background: var(--gb-1);
+      color: var(--gb-4);
+      border: none;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      box-shadow: 0 2px 0 #060d06;
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+
+    .btn-new-game:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="device">
+  <div class="device-brand">PIXELPET</div>
+
+  <div class="screen-bezel">
+    <div class="screen-label">DOT MATRIX WITH STEREO SOUND</div>
+    <div class="screen-window">
+      <canvas id="screen" width="64" height="64"></canvas>
+    </div>
+  </div>
+
+  <div class="stats-panel">
+    <div class="stat-row">
+      <span class="stat-icon">🍖</span>
+      <div class="bar-bg"><div class="bar-fill" id="hungerBar"></div></div>
+    </div>
+    <div class="stat-row">
+      <span class="stat-icon">★</span>
+      <div class="bar-bg"><div class="bar-fill" id="happyBar"></div></div>
+    </div>
+    <div class="stat-row">
+      <span class="stat-icon">♥</span>
+      <div class="bar-bg"><div class="bar-fill" id="healthBar"></div></div>
+    </div>
+    <div class="pet-info">
+      <span id="stageLabel">EGG</span>
+      <span id="poopLabel"></span>
+      <span id="ageLabel">0m</span>
+    </div>
+    <div class="message-bar" id="msgBar">&nbsp;</div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" id="btnFeed"  onclick="doAction('feed')"     title="Feed">🍎</button>
+    <button class="btn" id="btnPlay"  onclick="doAction('play')"     title="Play">🎮</button>
+    <button class="btn" id="btnSleep" onclick="doAction('sleep')"    title="Sleep / Wake">💤</button>
+    <button class="btn" id="btnMed"   onclick="doAction('medicine')" title="Medicine">💊</button>
+    <button class="btn" id="btnClean" onclick="doAction('clean')"    title="Clean">🧹</button>
+  </div>
+
+  <button class="btn-new-game" id="btnNew" onclick="newGame()" style="display:none">
+    ↺ NEW PET
+  </button>
+</div>
+
+<!-- Load sprite sheet system BEFORE game script -->
+<script src="sprites.js"></script>
+
+<script>
+/* =============================================================
+   PIXELPET — main game script
+   ============================================================= */
+
+/* ===== PALETTE =====
+   Index 0 = transparent (skip draw)
+   Index 1 = #9bbc0f  (lightest)
+   Index 2 = #8bac0f
+   Index 3 = #306230
+   Index 4 = #0f380f  (darkest / outline)
+*/
+var PALETTE = [null, '#9bbc0f', '#8bac0f', '#306230', '#0f380f'];
+
+/* ===== SPRITE GRIDS =====
+   Each sprite is an 8×8 grid (8 rows × 8 columns).
+   Each cell is a palette index (0–4).
+   drawSprite() renders these on the 64×64 canvas (8px per cell).
+*/
+var SPRITE_GRIDS = {
+  egg: [
+    [0,0,4,4,4,4,0,0],
+    [0,4,2,1,1,2,4,0],
+    [4,2,1,4,1,1,2,4],
+    [4,2,4,1,1,2,2,4],
+    [4,2,2,1,1,2,2,4],
+    [4,2,1,1,1,1,2,4],
+    [0,4,2,2,2,2,4,0],
+    [0,0,4,4,4,4,0,0]
+  ],
+  baby_a: [
+    [0,0,4,4,4,4,0,0],
+    [0,4,3,3,3,3,4,0],
+    [4,3,2,4,4,2,3,4],
+    [4,3,2,1,1,2,3,4],
+    [4,3,3,4,4,3,3,4],
+    [0,4,3,3,3,3,4,0],
+    [0,0,4,3,3,4,0,0],
+    [0,0,0,4,4,0,0,0]
+  ],
+  baby_b: [
+    [0,0,0,4,4,0,0,0],
+    [0,4,4,4,4,4,4,0],
+    [4,3,2,4,4,2,3,4],
+    [4,3,2,1,1,2,3,4],
+    [4,3,3,4,4,3,3,4],
+    [0,4,3,3,3,3,4,0],
+    [0,0,4,4,4,4,0,0],
+    [0,0,0,0,0,0,0,0]
+  ],
+  child_a: [
+    [0,0,4,4,4,4,0,0],
+    [0,4,3,3,3,3,4,0],
+    [4,3,3,4,4,3,3,4],
+    [4,3,2,4,4,2,3,4],
+    [4,3,3,2,2,3,3,4],
+    [0,4,3,3,3,3,4,0],
+    [4,0,4,3,3,4,0,4],
+    [0,4,4,0,0,4,4,0]
+  ],
+  child_b: [
+    [0,0,4,4,4,4,0,0],
+    [0,4,3,3,3,3,4,0],
+    [4,3,3,4,4,3,3,4],
+    [4,3,2,4,4,2,3,4],
+    [4,3,3,3,3,3,3,4],
+    [0,4,3,3,3,3,4,0],
+    [0,4,4,3,3,4,4,0],
+    [0,4,4,0,0,4,4,0]
+  ],
+  teen_a: [
+    [4,4,0,4,4,0,4,4],
+    [0,4,3,3,3,3,4,0],
+    [4,3,2,4,4,2,3,4],
+    [4,3,4,4,4,4,3,4],
+    [4,3,3,4,4,3,3,4],
+    [0,4,3,3,3,3,4,0],
+    [4,4,4,3,3,4,4,4],
+    [0,4,4,0,0,4,4,0]
+  ],
+  teen_b: [
+    [4,0,4,4,4,4,0,4],
+    [0,4,3,3,3,3,4,0],
+    [4,3,2,4,4,2,3,4],
+    [4,3,4,3,3,4,3,4],
+    [4,3,3,4,4,3,3,4],
+    [0,4,3,3,3,3,4,0],
+    [4,4,3,3,3,3,4,4],
+    [0,4,4,0,0,4,4,0]
+  ],
+  adult_a: [
+    [0,0,4,4,4,4,0,0],
+    [4,3,3,3,3,3,3,4],
+    [4,3,2,4,4,2,3,4],
+    [4,3,1,2,2,1,3,4],
+    [4,3,3,2,2,3,3,4],
+    [4,3,3,3,3,3,3,4],
+    [4,3,4,3,3,4,3,4],
+    [0,4,4,4,4,4,4,0]
+  ],
+  adult_b: [
+    [0,0,4,4,4,4,0,0],
+    [4,3,3,3,3,3,3,4],
+    [4,3,2,4,4,2,3,4],
+    [4,3,1,2,2,1,3,4],
+    [4,3,3,1,1,3,3,4],
+    [4,3,3,3,3,3,3,4],
+    [4,4,3,3,3,3,4,4],
+    [0,4,4,4,4,4,4,0]
+  ],
+  sleeping: [
+    [1,0,0,0,1,0,2,0],
+    [4,3,3,3,3,3,3,4],
+    [4,3,2,2,2,2,3,4],
+    [4,3,3,3,3,3,3,4],
+    [4,3,3,1,1,3,3,4],
+    [4,3,3,3,3,3,3,4],
+    [4,4,3,3,3,3,4,4],
+    [0,4,4,4,4,4,4,0]
+  ],
+  sick: [
+    [0,1,4,4,4,4,1,0],
+    [0,4,3,3,3,3,4,0],
+    [4,3,2,4,4,2,3,4],
+    [4,3,4,2,4,2,4,3],
+    [4,3,3,4,4,3,3,4],
+    [4,3,3,3,3,3,3,4],
+    [4,4,3,3,3,3,4,4],
+    [0,4,4,4,4,4,4,0]
+  ],
+  dead: [
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [4,4,4,4,4,4,4,4],
+    [4,3,4,3,3,4,3,4],
+    [4,3,3,4,4,3,3,4],
+    [4,3,3,3,3,3,3,4],
+    [4,4,4,4,4,4,4,4],
+    [0,0,0,0,0,0,0,0]
+  ],
+  happy: [
+    [1,0,4,4,4,4,0,1],
+    [0,4,3,3,3,3,4,0],
+    [4,3,1,4,4,1,3,4],
+    [4,3,4,1,1,4,3,4],
+    [4,3,1,3,3,1,3,4],
+    [4,3,3,3,3,3,3,4],
+    [4,4,3,3,3,3,4,4],
+    [0,4,4,4,4,4,4,0]
+  ],
+  hungry: [
+    [0,0,4,4,4,4,0,0],
+    [0,4,3,3,3,3,4,0],
+    [4,3,3,4,4,3,3,4],
+    [4,3,2,4,4,2,3,4],
+    [4,3,3,3,4,3,3,4],
+    [4,4,4,3,3,4,4,4],
+    [0,4,3,3,3,3,4,0],
+    [0,0,4,4,4,4,0,0]
+  ],
+  play: [
+    [0,0,4,4,4,4,0,0],
+    [0,4,3,3,3,3,4,0],
+    [4,3,2,4,4,2,3,4],
+    [4,3,1,2,2,1,3,4],
+    [4,3,3,1,1,3,3,4],
+    [0,4,3,3,3,3,4,0],
+    [4,0,0,4,4,0,0,4],
+    [0,4,0,0,0,0,4,0]
+  ],
+  feed: [
+    [0,0,4,4,4,4,0,0],
+    [0,4,3,3,3,3,4,0],
+    [4,3,1,4,4,1,3,4],
+    [4,3,4,1,1,4,3,4],
+    [4,3,3,4,4,3,3,4],
+    [4,4,3,3,3,4,2,0],
+    [0,4,3,2,2,4,0,0],
+    [0,0,4,4,4,4,0,0]
+  ]
+};
+
+/* ===== CANVAS SETUP ===== */
+var canvas = document.getElementById('screen');
+var ctx = canvas.getContext('2d');
+
+/* ===== drawSprite(grid) — CANVAS GRID SYSTEM (original / fallback) =====
+   Renders an 8×8 palette-index grid onto the 64×64 canvas.
+   Each cell is drawn as an 8×8 pixel block.
+   Palette index 0 is transparent (not drawn).
+   @param {number[][]} grid — 8 rows of 8 palette indices
+*/
+function drawSprite(grid) {
+  ctx.clearRect(0, 0, 64, 64);
+  var blockSize = 8;
+  for (var row = 0; row < 8; row++) {
+    for (var col = 0; col < 8; col++) {
+      var idx = grid[row][col];
+      if (idx === 0) continue;
+      var color = PALETTE[idx];
+      if (!color) continue;
+      ctx.fillStyle = color;
+      ctx.fillRect(col * blockSize, row * blockSize, blockSize, blockSize);
+    }
+  }
+}
+
+/* ===== drawPetImage(spriteName) — SPRITE SHEET SYSTEM (new) =====
+   Looks up the preloaded PNG via getSprite() from sprites.js.
+   If found: draws the image centred on the 64×64 canvas.
+   If not found: falls back to drawSprite() using the canvas grid.
+   @param {string} spriteName — must match one of the SPRITE_GRIDS keys
+*/
+function drawPetImage(spriteName) {
+  ctx.clearRect(0, 0, 64, 64);
+
+  /* getSprite is provided by sprites.js; guard in case it hasn't loaded */
+  var img = (typeof getSprite === 'function') ? getSprite(spriteName) : null;
+
+  if (img) {
+    /* Draw the 64×64 PNG centred on the canvas */
+    ctx.drawImage(img, 0, 0, 64, 64);
+  } else {
+    /* Fallback: canvas grid */
+    var grid = SPRITE_GRIDS[spriteName];
+    if (grid) drawSprite(grid);
+  }
+}
+
+/* ===== GAME CONSTANTS ===== */
+var TICK_MS = 3000;          /* 3 seconds per game tick */
+
+/* Age (in ticks) at which each stage begins */
+var STAGE_AGE = {
+  baby:  10,    /* ~30s  */
+  child: 100,   /* ~5min */
+  teen:  300,   /* ~15min */
+  adult: 600    /* ~30min */
+};
+
+/* ===== GAME STATE ===== */
+var state = {
+  stage:       'egg',
+  hunger:      80,
+  happiness:   80,
+  health:      100,
+  age:         0,
+  sleeping:    false,
+  sick:        false,
+  dead:        false,
+  animFrame:   0,
+  actionState: null,  /* null | 'feed' | 'play' | 'happy' */
+  actionTicks: 0,
+  poop:        0,
+  hungerZeroTicks: 0,
+  lastSave:    Date.now()
+};
+
+/* ===== PERSIST ===== */
+function saveState() {
+  state.lastSave = Date.now();
+  try { localStorage.setItem('pixelpet_state', JSON.stringify(state)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem('pixelpet_state');
+    if (!raw) return;
+    var saved = JSON.parse(raw);
+    Object.assign(state, saved);
+  } catch(e) {}
+}
+
+/* ===== SPRITE SELECTION ===== */
+function getCurrentSpriteName() {
+  if (state.dead)                        return 'dead';
+  if (state.sick)                        return 'sick';
+  if (state.sleeping)                    return 'sleeping';
+  if (state.actionState === 'feed')      return 'feed';
+  if (state.actionState === 'play')      return 'play';
+  if (state.actionState === 'happy')     return 'happy';
+  if (state.hunger < 25 && !state.sleeping) return 'hungry';
+
+  switch (state.stage) {
+    case 'egg':   return 'egg';
+    case 'baby':  return state.animFrame === 0 ? 'baby_a'  : 'baby_b';
+    case 'child': return state.animFrame === 0 ? 'child_a' : 'child_b';
+    case 'teen':  return state.animFrame === 0 ? 'teen_a'  : 'teen_b';
+    case 'adult': return state.animFrame === 0 ? 'adult_a' : 'adult_b';
+    default:      return 'adult_a';
+  }
+}
+
+/* ===== GAME TICK ===== */
+function gameTick() {
+  if (state.dead) return;
+
+  state.age++;
+
+  /* --- Stage progression --- */
+  if (state.stage === 'egg'   && state.age >= STAGE_AGE.baby)  { state.stage = 'baby';  showMsg('Your egg hatched!'); }
+  if (state.stage === 'baby'  && state.age >= STAGE_AGE.child) { state.stage = 'child'; showMsg('Growing up!'); }
+  if (state.stage === 'child' && state.age >= STAGE_AGE.teen)  { state.stage = 'teen';  showMsg('Becoming a teenager...'); }
+  if (state.stage === 'teen'  && state.age >= STAGE_AGE.adult) { state.stage = 'adult'; showMsg('Fully grown!'); }
+
+  if (!state.sleeping) {
+    /* Hunger decays every 20 ticks (~1 min) */
+    if (state.age % 20 === 0 && state.stage !== 'egg') {
+      state.hunger = Math.max(0, state.hunger - 1);
+    }
+    /* Happiness decays every 15 ticks (~45s) */
+    if (state.age % 15 === 0 && state.stage !== 'egg') {
+      state.happiness = Math.max(0, state.happiness - 1);
+    }
+    /* Poop every 60 ticks (~3 min) */
+    if (state.age % 60 === 0 && state.stage !== 'egg') {
+      state.poop = Math.min(3, state.poop + 1);
+    }
+    /* Starvation damages health */
+    if (state.hunger === 0) {
+      state.hungerZeroTicks++;
+      if (state.hungerZeroTicks >= 20) {
+        state.health = Math.max(0, state.health - 2);
+      }
+    } else {
+      state.hungerZeroTicks = 0;
+    }
+    /* Sickness triggers when health drops below 30 */
+    if (state.health < 30 && !state.sick) {
+      state.sick = true;
+      showMsg('Your pet is sick!');
+    }
+    /* Death */
+    if (state.health === 0) {
+      state.dead = true;
+      showMsg('Your pet has passed away...');
+      updateDisplay();
+      saveState();
+      return;
+    }
+  } else {
+    /* Sleeping recovers health slowly */
+    if (state.age % 10 === 0) {
+      state.health = Math.min(100, state.health + 1);
+    }
+  }
+
+  /* Action state countdown */
+  if (state.actionState) {
+    state.actionTicks--;
+    if (state.actionTicks <= 0) {
+      state.actionState = null;
+      state.actionTicks = 0;
+    }
+  }
+
+  /* Animation toggle every 4 ticks */
+  if (state.age % 4 === 0) {
+    state.animFrame = 1 - state.animFrame;
+  }
+
+  updateDisplay();
+  saveState();
+}
+
+/* ===== OFFLINE CATCHUP =====
+   When the page loads, replay ticks that passed while away.
+   Capped at 480 ticks (24 min real time) to avoid freezing.
+*/
+function applyOfflineTicks() {
+  var elapsed = Date.now() - (state.lastSave || Date.now());
+  var ticks = Math.min(Math.floor(elapsed / TICK_MS), 480);
+  for (var i = 0; i < ticks; i++) {
+    if (state.dead) break;
+    gameTick();
+  }
+}
+
+/* ===== RENDER ===== */
+function render() {
+  drawPetImage(getCurrentSpriteName());
+}
+
+/* ===== DISPLAY UPDATE ===== */
+function setBar(id, pct) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var w = Math.max(0, Math.min(100, pct));
+  el.style.width = w + '%';
+  el.className = 'bar-fill' + (w < 30 ? ' low' : w < 60 ? ' mid' : ' high');
+}
+
+function getAgeText() {
+  var secs = state.age * (TICK_MS / 1000);
+  var mins  = Math.floor(secs / 60);
+  if (mins < 60) return mins + 'm';
+  return Math.floor(mins / 60) + 'h';
+}
+
+function updateDisplay() {
+  setBar('hungerBar', state.hunger);
+  setBar('happyBar',  state.happiness);
+  setBar('healthBar', state.health);
+
+  var stageEl = document.getElementById('stageLabel');
+  if (stageEl) stageEl.textContent = state.stage.toUpperCase();
+
+  var ageEl = document.getElementById('ageLabel');
+  if (ageEl) ageEl.textContent = getAgeText();
+
+  var poopEl = document.getElementById('poopLabel');
+  if (poopEl) poopEl.textContent = state.poop > 0 ? '💩'.repeat(state.poop) : '';
+
+  /* Button states */
+  document.getElementById('btnFeed').disabled  = state.dead || state.sleeping;
+  document.getElementById('btnPlay').disabled  = state.dead || state.sleeping || state.stage === 'egg';
+  document.getElementById('btnSleep').disabled = state.dead;
+  document.getElementById('btnMed').disabled   = state.dead || !state.sick;
+  document.getElementById('btnClean').disabled = state.dead || state.poop === 0;
+
+  document.getElementById('btnSleep').textContent = state.sleeping ? '☀️' : '💤';
+
+  document.getElementById('btnNew').style.display = state.dead ? 'block' : 'none';
+
+  render();
+}
+
+/* ===== MESSAGE BAR ===== */
+var _msgTimer = null;
+function showMsg(text) {
+  var el = document.getElementById('msgBar');
+  if (!el) return;
+  el.textContent = text;
+  clearTimeout(_msgTimer);
+  _msgTimer = setTimeout(function () { el.textContent = '\u00a0'; }, 4000);
+}
+
+/* ===== ACTIONS ===== */
+function doAction(type) {
+  if (state.dead) return;
+
+  switch (type) {
+    case 'feed':
+      if (state.sleeping) { showMsg('Zzz... not now.'); return; }
+      state.hunger      = Math.min(100, state.hunger + 22);
+      state.actionState = 'feed';
+      state.actionTicks = 3;
+      showMsg('Nom nom!');
+      break;
+
+    case 'play':
+      if (state.sleeping) { showMsg('Zzz... not now.'); return; }
+      if (state.stage === 'egg') { showMsg('Not hatched yet!'); return; }
+      state.happiness   = Math.min(100, state.happiness + 22);
+      state.hunger      = Math.max(0, state.hunger - 5);
+      state.actionState = 'play';
+      state.actionTicks = 3;
+      showMsg('Wheee!');
+      break;
+
+    case 'sleep':
+      state.sleeping    = !state.sleeping;
+      state.actionState = null;
+      showMsg(state.sleeping ? 'Good night...' : 'Good morning!');
+      break;
+
+    case 'medicine':
+      if (!state.sick) { showMsg('Not sick right now.'); return; }
+      state.sick        = false;
+      state.health      = Math.min(100, state.health + 30);
+      state.actionState = 'happy';
+      state.actionTicks = 3;
+      showMsg('Feeling better!');
+      break;
+
+    case 'clean':
+      if (state.poop === 0) { showMsg('Already clean!'); return; }
+      state.poop        = 0;
+      state.happiness   = Math.min(100, state.happiness + 5);
+      showMsg('Squeaky clean!');
+      break;
+  }
+
+  updateDisplay();
+  saveState();
+}
+
+/* ===== NEW GAME ===== */
+function newGame() {
+  Object.assign(state, {
+    stage:       'egg',
+    hunger:      80,
+    happiness:   80,
+    health:      100,
+    age:         0,
+    sleeping:    false,
+    sick:        false,
+    dead:        false,
+    animFrame:   0,
+    actionState: null,
+    actionTicks: 0,
+    poop:        0,
+    hungerZeroTicks: 0,
+    lastSave:    Date.now()
+  });
+  saveState();
+  updateDisplay();
+  showMsg('A new adventure begins...');
+}
+
+/* ===== SERVICE WORKER REGISTRATION ===== */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/pixelpet/sw.js', { scope: '/pixelpet/' })
+    .catch(function () { /* SW optional — game works without it */ });
+}
+
+/* ===== INIT ===== */
+
+/* Re-render when sprite images finish loading */
+window.addEventListener('sprites:ready', function () {
+  render();
+});
+
+/* Load persisted state */
+loadState();
+
+/* Apply time that passed while away */
+applyOfflineTicks();
+
+/* Initial display pass */
+updateDisplay();
+
+/* Game loop */
+setInterval(gameTick, TICK_MS);
+
+/* Render loop (smooth animation at display refresh rate) */
+(function loop() {
+  render();
+  requestAnimationFrame(loop);
+})();
+
+</script>
+</body>
+</html>
