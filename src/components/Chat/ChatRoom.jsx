@@ -68,6 +68,21 @@ export default function ChatRoom({ room, myPlayer, session }) {
   }
 
   async function handleAction(actionText) {
+    const testRes = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gm-respond`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ roomId: 'test', systemPrompt: 'Respond ONLY with JSON: {"narrative":"FRONTEND WORKS","image_prompt":null,"actions":[]}', messageHistory: [{ role: 'user', content: 'test' }] })
+      }
+    );
+    const testData = await testRes.json();
+    alert(JSON.stringify(testData));
+    return;
+
     if (gmProcessing) return;
     setGmProcessing(true);
 
