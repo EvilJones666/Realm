@@ -30,18 +30,27 @@ serve(async (req) => {
       })),
     ];
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages,
-        max_tokens: 1000,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages,
+          max_tokens: 1000,
+        }),
+        signal: AbortSignal.timeout(25000),
+      });
+    } catch (fetchErr: any) {
+      const isTimeout = fetchErr?.name === 'TimeoutError' || fetchErr?.name === 'AbortError';
+      throw new Error(isTimeout
+        ? 'Groq API timed out after 25 seconds'
+        : `Groq fetch failed: ${fetchErr?.message}`);
+    }
 
     // Parse Groq response body first so we can include it in error messages
     let data: any;
