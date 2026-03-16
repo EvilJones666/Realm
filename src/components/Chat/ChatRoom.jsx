@@ -1,5 +1,7 @@
+import React, { useState } from 'react';
+
 export default function ChatRoom() {
-  const [result, setResult] = React.useState('waiting...');
+  const [result, setResult] = useState('waiting...');
   return (
     <div style={{padding: 20, color: 'white', background: '#0d0a07', minHeight: '100vh'}}>
       <p>{result}</p>
