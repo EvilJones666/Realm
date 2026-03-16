@@ -88,9 +88,27 @@ export default function ChatRoom({ room, myPlayer, session }) {
     const systemPrompt = buildGMPrompt(currentRoom, freshPlayers, freshMessages);
     const msgHistory = buildMessageHistory(freshMessages, freshPlayers);
 
-    // DEBUG: hardcoded test — skip edge function call entirely
-    let gmResponse = { narrative: 'TEST WORKING', image_prompt: null, actions: [] };
+    let gmResponse = null;
     let gmError = null;
+    try {
+      const { data, error } = await supabase.functions.invoke('gm-respond', {
+        body: { roomId: room.id, systemPrompt, messageHistory: msgHistory }
+      });
+      console.log('[GM] invoke data:', JSON.stringify(data));
+      console.log('[GM] invoke error:', JSON.stringify(error));
+      if (error) {
+        console.error('[GM] Supabase invoke error:', error.message, error.context?.status, error.context);
+        gmError = `Supabase invoke error: ${error.message || JSON.stringify(error)} (status: ${error.context?.status ?? 'unknown'})`;
+      } else if (data?.error) {
+        console.error('[GM] Edge function returned error:', data.error);
+        gmError = `Edge function error: ${typeof data.error === 'string' ? data.error : JSON.stringify(data.error)}`;
+      } else {
+        gmResponse = data;
+      }
+    } catch (e) {
+      console.error('[GM] Caught exception:', e);
+      gmError = `Exception: ${e?.message || String(e)}`;
+    }
 
     // Generate scene image if needed
     let imageUrl = null;
@@ -111,12 +129,14 @@ export default function ChatRoom({ room, myPlayer, session }) {
     const narrativeContent = gmResponse?.narrative
       ? gmResponse.narrative
       : `The realm shifts...\n[GM_ERROR: ${gmError || 'Unknown error — no narrative returned'}]`;
-    await supabase.from('messages').insert({
+    console.log('[GM] narrativeContent to insert:', narrativeContent?.slice(0, 120));
+    const { data: insertData, error: insertError } = await supabase.from('messages').insert({
       room_id: room.id,
       type: 'gm_narrative',
       content: narrativeContent,
       image_url: imageUrl,
-    });
+    }).select();
+    console.log('[GM] insert result:', JSON.stringify(insertData), 'error:', JSON.stringify(insertError));
 
     // Process GM actions
     if (gmResponse?.actions) {
