@@ -12,41 +12,44 @@ serve(async (req) => {
   try {
     const { roomId, systemPrompt, messageHistory } = await req.json();
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY')!;
+    const apiKey = Deno.env.get('GROQ_API_KEY')!;
 
-    // Map message history: assistant -> model
-    const contents = messageHistory.map((msg: { role: string; content: string }) => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }],
-    }));
+    // Build OpenAI-compatible messages array
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...messageHistory.map((msg: { role: string; content: string }) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+    ];
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents,
-          generationConfig: { maxOutputTokens: 1000 },
-        }),
-      }
-    );
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages,
+        max_tokens: 1000,
+      }),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Gemini API error');
+      throw new Error(data.error?.message || 'Groq API error');
     }
 
-    const rawText = data.candidates[0].content.parts[0].text;
+    const rawText = data.choices[0].message.content;
 
-    // Parse the JSON response from Gemini
+    // Parse the JSON response
     let parsed;
     try {
       parsed = JSON.parse(rawText);
     } catch {
-      // Fallback if Gemini adds extra text around the JSON
+      // Fallback if model adds extra text around the JSON
       const match = rawText.match(/\{[\s\S]*\}/);
       parsed = match ? JSON.parse(match[0]) : { narrative: rawText, image_prompt: null, actions: [] };
     }
