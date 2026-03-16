@@ -16,9 +16,9 @@ serve(async (req) => {
   try {
     const { roomId, systemPrompt, messageHistory } = await req.json();
 
-    const apiKey = Deno.env.get('GROQ_API_KEY');
+    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
     if (!apiKey) {
-      throw new Error('GROQ_API_KEY secret is not set in Supabase edge function secrets');
+      throw new Error('OPENROUTER_API_KEY secret is not set in Supabase edge function secrets');
     }
 
     // Build OpenAI-compatible messages array
@@ -32,14 +32,16 @@ serve(async (req) => {
 
     let response: Response;
     try {
-      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://realm-xi.vercel.app',
+          'X-Title': 'Realm',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
+          model: 'arcee-ai/trinity-mini:free',
           messages,
           max_tokens: 1000,
         }),
@@ -48,25 +50,25 @@ serve(async (req) => {
     } catch (fetchErr: any) {
       const isTimeout = fetchErr?.name === 'TimeoutError' || fetchErr?.name === 'AbortError';
       throw new Error(isTimeout
-        ? 'Groq API timed out after 25 seconds'
-        : `Groq fetch failed: ${fetchErr?.message}`);
+        ? 'OpenRouter API timed out after 25 seconds'
+        : `OpenRouter fetch failed: ${fetchErr?.message}`);
     }
 
-    // Parse Groq response body first so we can include it in error messages
+    // Parse OpenRouter response body first so we can include it in error messages
     let data: any;
     try {
       data = await response.json();
     } catch {
-      throw new Error(`Groq returned non-JSON body (HTTP ${response.status})`);
+      throw new Error(`OpenRouter returned non-JSON body (HTTP ${response.status})`);
     }
 
     if (!response.ok) {
-      throw new Error(`Groq API error (HTTP ${response.status}): ${data?.error?.message || JSON.stringify(data)}`);
+      throw new Error(`OpenRouter API error (HTTP ${response.status}): ${data?.error?.message || JSON.stringify(data)}`);
     }
 
     const rawText: string = data?.choices?.[0]?.message?.content;
     if (!rawText) {
-      throw new Error(`Groq returned no content. Full response: ${JSON.stringify(data)}`);
+      throw new Error(`OpenRouter returned no content. Full response: ${JSON.stringify(data)}`);
     }
 
     // Parse the JSON response from the model
