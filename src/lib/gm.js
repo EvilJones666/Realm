@@ -60,19 +60,10 @@ You must ALWAYS respond with ONLY this exact JSON object. No text outside it. No
   "narrative": "Your story text here. 3-5 sentences. Present tense. Vivid and direct.",
   "image_prompt": "A detailed Nano Banana image generation prompt IF this moment warrants a scene image. Generate images for: first scene of campaign, entering a new major location, dramatic reveals, boss encounters, significant story moments. Use a dark fantasy painterly art style, dramatic lighting, no text in image. Set to null if no image needed.",
   "actions": [
-    // Include any of these action objects as needed, or leave array empty:
-
-    // Award XP to a player:
-    { "type": "award_xp", "player_id": "uuid", "amount": 50, "reason": "Defeated the cave troll" },
-
-    // Give an item to a player:
-    { "type": "add_item", "player_id": "uuid", "item": { "name": "Iron Shield", "description": "Dented but reliable. Pried from a dead goblin." }},
-
-    // Kill a player:
-    { "type": "kill_player", "player_id": "uuid", "cause": "Swallowed by the stone golem" },
-
-    // Unlock a skill (only when player reaches correct level via XP — check thresholds):
-    { "type": "unlock_skill", "player_id": "uuid", "skill": "Fireball" }
+    { "type": "award_xp", "player_id": "REPLACE_WITH_PLAYER_UUID", "amount": 50, "reason": "Defeated the cave troll" },
+    { "type": "add_item", "player_id": "REPLACE_WITH_PLAYER_UUID", "item": { "name": "Iron Shield", "description": "Dented but reliable. Pried from a dead goblin." }},
+    { "type": "kill_player", "player_id": "REPLACE_WITH_PLAYER_UUID", "cause": "Swallowed by the stone golem" },
+    { "type": "unlock_skill", "player_id": "REPLACE_WITH_PLAYER_UUID", "skill": "Fireball" }
   ]
 }`;
 }
