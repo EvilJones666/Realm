@@ -93,9 +93,17 @@ export default function ChatRoom({ room, myPlayer, session }) {
       const { data, error } = await supabase.functions.invoke('gm-respond', {
         body: { roomId: room.id, systemPrompt, messageHistory: msgHistory }
       });
-      if (!error) gmResponse = data;
+      console.log('[GM] invoke data:', JSON.stringify(data));
+      console.log('[GM] invoke error:', JSON.stringify(error));
+      if (error) {
+        console.error('[GM] Supabase invoke error:', error.message, error.context?.status, error.context);
+      } else if (data?.error) {
+        console.error('[GM] Edge function returned error:', data.error);
+      } else {
+        gmResponse = data;
+      }
     } catch (e) {
-      console.error('GM error:', e);
+      console.error('[GM] Caught exception:', e);
     }
 
     // Generate scene image if needed
