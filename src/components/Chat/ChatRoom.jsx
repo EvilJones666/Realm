@@ -68,17 +68,11 @@ export default function ChatRoom({ room, myPlayer, session }) {
   }
 
   async function handleAction(actionText) {
-    const testRes = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gm-respond`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ roomId: 'test', systemPrompt: 'Respond ONLY with JSON: {"narrative":"FRONTEND WORKS","image_prompt":null,"actions":[]}', messageHistory: [{ role: 'user', content: 'test' }] })
-      }
-    );
+    const testRes = await fetch('/api/gm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomId: 'test', systemPrompt: 'Respond ONLY with JSON: {"narrative":"FRONTEND WORKS","image_prompt":null,"actions":[]}', messageHistory: [{ role: 'user', content: 'test' }] })
+    });
     const testData = await testRes.json();
     alert(JSON.stringify(testData));
     return;
@@ -106,17 +100,11 @@ export default function ChatRoom({ room, myPlayer, session }) {
     let gmResponse = null;
     let gmError = null;
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gm-respond`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ roomId: room.id, systemPrompt, messageHistory: msgHistory }),
-        }
-      );
+      const res = await fetch('/api/gm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, systemPrompt, messageHistory: msgHistory }),
+      });
       console.log('[GM] fetch status:', res.status);
       const data = await res.json();
       console.log('[GM] fetch data:', JSON.stringify(data));
@@ -135,9 +123,12 @@ export default function ChatRoom({ room, myPlayer, session }) {
     let imageUrl = null;
     if (gmResponse?.image_prompt) {
       try {
-        const { data: imgData } = await supabase.functions.invoke('generate-image', {
-          body: { prompt: gmResponse.image_prompt, type: 'scene' }
+        const imgRes = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: gmResponse.image_prompt, type: 'scene' }),
         });
+        const imgData = await imgRes.json();
         if (imgData?.base64) {
           imageUrl = await uploadImage(imgData.base64, imgData.mimeType, 'images', `${room.id}-${Date.now()}.jpg`);
         }
@@ -198,9 +189,12 @@ export default function ChatRoom({ room, myPlayer, session }) {
           // Generate item icon
           let iconUrl = null;
           try {
-            const { data: imgData } = await supabase.functions.invoke('generate-image', {
-              body: { prompt: action.item.name + ' ' + action.item.description, type: 'item' }
+            const imgRes = await fetch('/api/generate-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: action.item.name + ' ' + action.item.description, type: 'item' }),
             });
+            const imgData = await imgRes.json();
             if (imgData?.base64) {
               iconUrl = await uploadImage(imgData.base64, imgData.mimeType, 'images', `item-${Date.now()}.jpg`);
             }

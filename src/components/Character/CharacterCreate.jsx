@@ -20,10 +20,13 @@ export default function CharacterCreate({ room, session, onCreated, onBack }) {
     setGenerating(true);
     try {
       const prompt = `${ARCHETYPES[archetype].label}: ${description}`;
-      const { data, error: fnErr } = await supabase.functions.invoke('generate-image', {
-        body: { prompt, type: 'portrait' }
+      const imgRes = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, type: 'portrait' }),
       });
-      if (fnErr || !data?.base64) throw new Error(fnErr?.message || 'No image returned');
+      const data = await imgRes.json();
+      if (!imgRes.ok || !data?.base64) throw new Error(data?.error || 'No image returned');
       setPortraitBase64(data.base64);
       setPortraitMime(data.mimeType || 'image/jpeg');
       setStep('portrait');

@@ -73,10 +73,13 @@ export default function Lobby({ room, myPlayer, session, onRoomUpdate }) {
 
     let gmResponse = null;
     try {
-      const { data, error } = await supabase.functions.invoke('gm-respond', {
-        body: { roomId: room.id, systemPrompt, messageHistory: openingMessage }
+      const _gmRes = await fetch('/api/gm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, systemPrompt, messageHistory: openingMessage }),
       });
-      if (!error) gmResponse = data;
+      const data = await _gmRes.json();
+      if (_gmRes.ok) gmResponse = data;
     } catch (e) {
       console.error('GM error:', e);
     }
@@ -85,9 +88,12 @@ export default function Lobby({ room, myPlayer, session, onRoomUpdate }) {
     let imageUrl = null;
     if (gmResponse?.image_prompt) {
       try {
-        const { data: imgData } = await supabase.functions.invoke('generate-image', {
-          body: { prompt: gmResponse.image_prompt, type: 'scene' }
+        const imgRes = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: gmResponse.image_prompt, type: 'scene' }),
         });
+        const imgData = await imgRes.json();
         if (imgData?.base64) {
           const { uploadImage } = await import('../../lib/supabase');
           imageUrl = await uploadImage(imgData.base64, imgData.mimeType, 'images', `${room.id}-opening-${Date.now()}.jpg`);
