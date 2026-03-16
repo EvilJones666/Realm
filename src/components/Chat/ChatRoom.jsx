@@ -88,27 +88,9 @@ export default function ChatRoom({ room, myPlayer, session }) {
     const systemPrompt = buildGMPrompt(currentRoom, freshPlayers, freshMessages);
     const msgHistory = buildMessageHistory(freshMessages, freshPlayers);
 
-    let gmResponse = null;
+    // DEBUG: hardcoded test — skip edge function call entirely
+    let gmResponse = { narrative: 'TEST WORKING', image_prompt: null, actions: [] };
     let gmError = null;
-    try {
-      const { data, error } = await supabase.functions.invoke('gm-respond', {
-        body: { roomId: room.id, systemPrompt, messageHistory: msgHistory }
-      });
-      console.log('[GM] invoke data:', JSON.stringify(data));
-      console.log('[GM] invoke error:', JSON.stringify(error));
-      if (error) {
-        console.error('[GM] Supabase invoke error:', error.message, error.context?.status, error.context);
-        gmError = `Supabase invoke error: ${error.message || JSON.stringify(error)} (status: ${error.context?.status ?? 'unknown'})`;
-      } else if (data?.error) {
-        console.error('[GM] Edge function returned error:', data.error);
-        gmError = `Edge function error: ${typeof data.error === 'string' ? data.error : JSON.stringify(data.error)}`;
-      } else {
-        gmResponse = data;
-      }
-    } catch (e) {
-      console.error('[GM] Caught exception:', e);
-      gmError = `Exception: ${e?.message || String(e)}`;
-    }
 
     // Generate scene image if needed
     let imageUrl = null;
