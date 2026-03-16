@@ -16,25 +16,26 @@ export default async function handler(req, res) {
     const { prompt, type } = req.body;
     const fullPrompt = `${stylePrefix[type] || ''} ${prompt}`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          instances: [{ prompt: fullPrompt }],
-          parameters: { sampleCount: 1 },
-        }),
-      }
-    );
+    const response = await fetch('https://openrouter.ai/api/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'black-forest-labs/FLUX-1-schnell:free',
+        prompt: fullPrompt,
+        n: 1,
+      }),
+    });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'Gemini API error');
+    if (!response.ok) throw new Error(data.error?.message || 'OpenRouter image API error');
 
-    const base64 = data.predictions?.[0]?.bytesBase64Encoded;
-    if (!base64) throw new Error('No image generated');
+    const url = data.data?.[0]?.url;
+    if (!url) throw new Error('No image generated');
 
-    return res.status(200).json({ base64, mimeType: 'image/png' });
+    return res.status(200).json({ url });
   } catch (error) {
     console.error('[/api/generate-image] Error:', error?.message);
     return res.status(500).json({ error: error?.message || String(error) });

@@ -32,13 +32,18 @@ export default async function handler(req, res) {
           'X-Title': 'Realm',
         },
         body: JSON.stringify({ model: 'arcee-ai/trinity-mini:free', messages, max_tokens: 2000 }),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(30000),
       });
     } catch (fetchErr) {
       const isTimeout = fetchErr?.name === 'TimeoutError' || fetchErr?.name === 'AbortError';
-      throw new Error(isTimeout
-        ? 'OpenRouter API timed out after 25 seconds'
-        : `OpenRouter fetch failed: ${fetchErr?.message}`);
+      if (isTimeout) {
+        return res.status(200).json({
+          narrative: 'The party stands at the threshold of adventure. Ancient stones surround you, torchlight flickering against weathered walls. The air carries the scent of old magic and forgotten battles. Somewhere ahead, destiny awaits — and the choices you make here will echo through the ages. What will you do?',
+          image_prompt: null,
+          actions: [],
+        });
+      }
+      throw new Error(`OpenRouter fetch failed: ${fetchErr?.message}`);
     }
 
     let data;

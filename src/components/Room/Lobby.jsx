@@ -94,9 +94,8 @@ export default function Lobby({ room, myPlayer, session, onRoomUpdate }) {
           body: JSON.stringify({ prompt: gmResponse.image_prompt, type: 'scene' }),
         });
         const imgData = await imgRes.json();
-        if (imgData?.base64) {
-          const { uploadImage } = await import('../../lib/supabase');
-          imageUrl = await uploadImage(imgData.base64, imgData.mimeType, 'images', `${room.id}-opening-${Date.now()}.jpg`);
+        if (imgData?.url) {
+          imageUrl = imgData.url;
         }
       } catch (e) {
         console.error('Image gen error:', e);

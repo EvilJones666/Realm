@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase, uploadImage } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { ARCHETYPES } from '../../lib/constants';
 
 const ARCHETYPE_KEYS = Object.keys(ARCHETYPES);
@@ -9,8 +9,7 @@ export default function CharacterCreate({ room, session, onCreated, onBack }) {
   const [name, setName] = useState('');
   const [archetype, setArchetype] = useState('warrior');
   const [description, setDescription] = useState('');
-  const [portraitBase64, setPortraitBase64] = useState(null);
-  const [portraitMime, setPortraitMime] = useState('image/jpeg');
+  const [portraitUrl, setPortraitUrl] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -26,9 +25,8 @@ export default function CharacterCreate({ room, session, onCreated, onBack }) {
         body: JSON.stringify({ prompt, type: 'portrait' }),
       });
       const data = await imgRes.json();
-      if (!imgRes.ok || !data?.base64) throw new Error(data?.error || 'No image returned');
-      setPortraitBase64(data.base64);
-      setPortraitMime(data.mimeType || 'image/jpeg');
+      if (!imgRes.ok || !data?.url) throw new Error(data?.error || 'No image returned');
+      setPortraitUrl(data.url);
       setStep('portrait');
     } catch (e) {
       setError(e.message || 'Portrait generation failed. Check your API key.');
@@ -37,7 +35,7 @@ export default function CharacterCreate({ room, session, onCreated, onBack }) {
   }
 
   async function handleRegeneratePortrait() {
-    setPortraitBase64(null);
+    setPortraitUrl(null);
     await handleGeneratePortrait();
   }
 
@@ -45,11 +43,6 @@ export default function CharacterCreate({ room, session, onCreated, onBack }) {
     setSaving(true);
     setError('');
     try {
-      let portraitUrl = null;
-      if (portraitBase64) {
-        const filename = `${session.user.id}-${room.id}-${Date.now()}.jpg`;
-        portraitUrl = await uploadImage(portraitBase64, portraitMime, 'portraits', filename);
-      }
 
       // Count existing players for turn order
       const { count } = await supabase
@@ -80,7 +73,7 @@ export default function CharacterCreate({ room, session, onCreated, onBack }) {
   }
 
   function handleSkipPortrait() {
-    setPortraitBase64(null);
+    setPortraitUrl(null);
     handleConfirmWithoutPortrait();
   }
 
@@ -291,10 +284,10 @@ export default function CharacterCreate({ room, session, onCreated, onBack }) {
                   Nano Banana is painting your portrait...
                 </div>
               </div>
-            ) : portraitBase64 ? (
+            ) : portraitUrl ? (
               <>
                 <img
-                  src={`data:${portraitMime};base64,${portraitBase64}`}
+                  src={portraitUrl}
                   alt="Character portrait"
                   style={{
                     width: '100%',

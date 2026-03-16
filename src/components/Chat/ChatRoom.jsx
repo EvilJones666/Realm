@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase, uploadImage } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { buildGMPrompt, buildMessageHistory } from '../../lib/gm';
 import { getLevel, ARCHETYPES } from '../../lib/constants';
 import TurnIndicator from './TurnIndicator';
@@ -112,8 +112,8 @@ export default function ChatRoom({ room, myPlayer, session }) {
           body: JSON.stringify({ prompt: gmResponse.image_prompt, type: 'scene' }),
         });
         const imgData = await imgRes.json();
-        if (imgData?.base64) {
-          imageUrl = await uploadImage(imgData.base64, imgData.mimeType, 'images', `${room.id}-${Date.now()}.jpg`);
+        if (imgData?.url) {
+          imageUrl = imgData.url;
         }
       } catch (e) { /* non-critical */ }
     }
@@ -171,8 +171,8 @@ export default function ChatRoom({ room, myPlayer, session }) {
               body: JSON.stringify({ prompt: action.item.name + ' ' + action.item.description, type: 'item' }),
             });
             const imgData = await imgRes.json();
-            if (imgData?.base64) {
-              iconUrl = await uploadImage(imgData.base64, imgData.mimeType, 'images', `item-${Date.now()}.jpg`);
+            if (imgData?.url) {
+              iconUrl = imgData.url;
             }
           } catch (e) { /* non-critical */ }
 
