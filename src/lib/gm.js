@@ -69,12 +69,24 @@ You must ALWAYS respond with ONLY this exact JSON object. No text outside it. No
 }
 
 export function buildMessageHistory(messages, players) {
-  return messages.slice(-20).map(msg => {
-    if (msg.type === 'gm_narrative') {
-      return { role: 'assistant', content: msg.content };
-    }
-    const player = players.find(p => p.id === msg.player_id);
-    const name = player ? player.name : 'Unknown';
-    return { role: 'user', content: `${name}: ${msg.content}` };
-  });
+  return messages
+    .filter(msg => {
+      // Skip system messages and error fallback narratives — they poison the model's context
+      if (msg.type === 'system') return false;
+      if (msg.type === 'gm_narrative' && msg.content?.startsWith('The realm shifts...')) return false;
+      return true;
+    })
+    .slice(-20)
+    .map(msg => {
+      if (msg.type === 'gm_narrative') {
+        // Wrap in JSON so the model sees the expected output format in its own history
+        return {
+          role: 'assistant',
+          content: JSON.stringify({ narrative: msg.content, image_prompt: null, actions: [] }),
+        };
+      }
+      const player = players.find(p => p.id === msg.player_id);
+      const name = player ? player.name : 'Unknown';
+      return { role: 'user', content: `${name}: ${msg.content}` };
+    });
 }
