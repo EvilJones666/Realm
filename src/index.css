@@ -1,0 +1,212 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --bg-deep: #0d0a07;
+  --bg-surface: #1a1208;
+  --bg-elevated: #251a0e;
+  --border: #3d2e1a;
+  --ember: #c4622d;
+  --ember-glow: #e8843a;
+  --gold: #c9a84c;
+  --gold-light: #e8c96a;
+  --text-primary: #f0e6d3;
+  --text-secondary: #a08060;
+  --text-dim: #5a4030;
+  --gm-bg: #1a0d0d;
+  --gm-border: #5c1a1a;
+  --danger: #8b1a1a;
+  --success: #2d5a1b;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: 'Crimson Text', serif;
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+  height: 100dvh;
+}
+
+/* Parchment texture overlay for GM messages */
+.parchment-texture {
+  position: relative;
+}
+.parchment-texture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Custom animations */
+@keyframes ember-pulse {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(196, 98, 45, 0.4); }
+  50% { box-shadow: 0 0 16px 4px rgba(232, 132, 58, 0.6); }
+}
+
+@keyframes gold-shimmer {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes dice-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes level-up-burst {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes particle-float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-80px) scale(0); opacity: 0; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+
+.animate-ember-pulse { animation: ember-pulse 2s ease-in-out infinite; }
+.animate-gold-shimmer { animation: gold-shimmer 3s ease-in-out infinite; }
+.animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+.animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+.animate-level-up { animation: level-up-burst 0.5s ease-out forwards; }
+
+/* Input styling */
+.realm-input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: 'Crimson Text', serif;
+  font-size: 18px;
+  border-radius: 4px;
+  padding: 10px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.realm-input:focus {
+  border-color: var(--ember);
+  box-shadow: 0 0 0 2px rgba(196, 98, 45, 0.2);
+}
+.realm-input::placeholder {
+  color: var(--text-dim);
+}
+
+/* Button styling */
+.btn-ember {
+  background: var(--ember);
+  color: var(--text-primary);
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-ember:hover { background: var(--ember-glow); }
+.btn-ember:active { transform: scale(0.98); }
+.btn-ember:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-ghost:hover {
+  border-color: var(--ember);
+  color: var(--ember-glow);
+}
+
+/* Cards */
+.realm-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+/* Section headings */
+.realm-heading {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+
+/* XP bar */
+.xp-bar-track {
+  height: 6px;
+  background: var(--bg-deep);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: 3px;
+  transition: width 0.5s ease-out;
+}
+
+/* Portrait ring for active player */
+.portrait-active {
+  animation: ember-pulse 2s ease-in-out infinite;
+  border: 2px solid var(--ember);
+}
+
+/* Skull overlay for dead players */
+.portrait-dead {
+  filter: grayscale(100%) brightness(0.4);
+  position: relative;
+}
