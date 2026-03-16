@@ -16,30 +16,7 @@ export default async function handler(req, res) {
     const { prompt, type } = req.body;
     const fullPrompt = `${stylePrefix[type] || ''} ${prompt}`;
 
-    const response = await fetch('https://openrouter.ai/api/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'black-forest-labs/FLUX-1-schnell:free',
-        prompt: fullPrompt,
-        n: 1,
-      }),
-    });
-
-    const responseText = await response.text();
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      throw new Error(`OpenRouter returned non-JSON (HTTP ${response.status}): ${responseText.slice(0, 300)}`);
-    }
-    if (!response.ok) throw new Error(`OpenRouter error (HTTP ${response.status}): ${data.error?.message || JSON.stringify(data).slice(0, 300)}`);
-
-    const url = data.data?.[0]?.url;
-    if (!url) throw new Error(`No image URL in response: ${JSON.stringify(data).slice(0, 300)}`);
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=512&height=768&nologo=true&model=flux-schnell&seed=${Math.floor(Math.random() * 1000000)}`;
 
     return res.status(200).json({ url });
   } catch (error) {
